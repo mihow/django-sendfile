@@ -82,7 +82,15 @@ def sendfile(request, filename, attachment=False, attachment_filename=None, mime
                 parts.append('filename*=UTF-8\'\'%s' % quoted_filename)
         response['Content-Disposition'] = '; '.join(parts)
 
-    response['Content-length'] = os.path.getsize(filename)
+    # mod_wsgi barfs if serving a file over 2GB when Content-length is set.
+    # This is a quick fix for an old website. Ideally this would only apply 
+    # when mod_wsgi is being used as a backend. 
+    # The mod_wsgi wrapper sets Content-length on it's own anyway. 
+    #
+    # The bug is reported here: https://code.google.com/p/modwsgi/issues/detail?id=62
+    # And discussed here: https://groups.google.com/d/msg/modwsgi/U1r2qpCt2YE/XTqhzgPG0cEJ
+    #
+    # response['Content-length'] = os.path.getsize(filename) # <-- THE FIX!
     response['Content-Type'] = mimetype
     if not encoding:
         encoding = guessed_encoding
